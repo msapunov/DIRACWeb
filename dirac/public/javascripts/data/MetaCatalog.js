@@ -152,8 +152,10 @@ function querySelector( metaname , type ){
   }
   selector.ctCls = 'paddingButton';
   selector.on( 'collapse' , function( me ){
-    getCompatible( metaname , me.getRawValue() );
+    getCompatible();
   });
+  /*
+  TODO: What is it for???
   selector.on( 'beforequery' , function( q ){
     selector.store.reload({
       params: getMetadata( selector )
@@ -161,20 +163,25 @@ function querySelector( metaname , type ){
     q.cancel = true;
     return q;
   });
+  */
   var reset = new Ext.Button({
     cls: 'x-btn-icon'
     ,ctCls: 'paddingButton'
-    ,handler: function(){ selector.reset() }
+    ,handler: function(){
+      selector.reset();
+      try{
+        var store = gBroker.metaPanel.getStore()
+      }catch( error ){
+        return showError( 'Failed to get metadata tags' );
+      }
+      store.clearFilter();
+      if( store.myFilter ){
+        delete store.myFilter;
+      }
+      getCompatible();
+    }
     ,icon: gURLRoot + '/images/iface/resetButton.gif'
     ,minWidth: '25'
-  });
-  reset.on( 'click' , function(){
-    var store = gBroker.metaPanel.getStore()
-    store.clearFilter();
-    if( store.myFilter ){
-      delete store.myFilter;
-    }
-    getCompatible( metaname , '' );
   });
   var kill = new Ext.Button({
     cls: 'x-btn-icon'
@@ -207,7 +214,7 @@ function querySelector( metaname , type ){
   });
   return bar
 }
-function getMetadata( selector ){
+function getMetadata(){
   var params = new Object();
   var path = "/"
   try{
@@ -234,24 +241,17 @@ function getMetadata( selector ){
   }
   return params
 }
-function getCompatible( meta , value ){
-  var path = "/"
-  try{
-    var store = gBroker.filesPanel.getStore();
-    path = store.path;
-  }catch( error ){
-    showError( 'Failed to get directory path. Starting from root' );
-  }
+function getCompatible(){
   Ext.Ajax.request({
     method: 'POST'
-    ,params: { meta : meta , value : value , path: path }
+    ,params: getMetadata()
     ,success: function( response  ){
       response.responseText ? response = response.responseText : '';
       var data = Ext.util.JSON.decode( response );
       if( Ext.isEmpty( data.result ) ){
         return
       }
-      data.result[ meta ] = true;
+//      data.result[ meta ] = true;
 
       for( var i = 0 ; i < gBroker.queryPanel.items.getCount() ; i++ ){
         var item = gBroker.queryPanel.items.itemAt( i ) ;
