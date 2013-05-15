@@ -177,20 +177,22 @@ class MetacatalogController(BaseController):
   @jsonify
   def getCompatible( self ):
 
-    if not "meta" in request.params:
-      return { "success" : "false" , "error" : "Meta key is absent" }
-
-    if not "value" in request.params:
-      return { "success" : "false" , "error" : "Value key is absent" }
-
+    compat = dict()
     try:
-      compat = dict()
-      meta = str( request.params[ "meta" ] )
-      value = str( request.params[ "value" ] )
-      if len( value ) > 0:
-        compat[ meta ] = value
+      for key in request.params:
+        key = str( key )
+        prefix = key[ :12 ]
+        postfix = key[ 12: ]
+        if not "_compatible_" in prefix:
+          continue
+        if not len( postfix ) > 0:
+          continue
+        value = str( request.params[ key ] )
+        if len( value ) > 0:
+          compat[ postfix ] = value
     except Exception, e:
       return { "success" : "false" , "error" : e }
+    gLogger.debug( compat )
 
     RPC = getRPCClient( "DataManagement/FileCatalog" )
 
@@ -229,7 +231,7 @@ class MetacatalogController(BaseController):
         compat[ postfix ] = str( request.params[ key ] )
     except Exception, e:
       return { "success" : "false" , "error" : e }
-    gLogger.always( compat )    
+    gLogger.always( compat )
 
     RPC = getRPCClient( "DataManagement/FileCatalog" )
 
